@@ -1,0 +1,58 @@
+name: TestGenerator
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch latest changes
+        run: git pull origin ${{ github.head_ref }}
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v3
+        with:
+           python-version: "3.13"
+
+      - name: install
+        run: pip install requests urllib3 pycryptodome
+
+      - name: Start The Code
+        run: python enerator.py
+      
+      - name: delete the cache and Commit the logs
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'action@github.com'
+          git add -A
+          git diff-index --quiet HEAD || (git commit -a -m "out session update" --allow-empty)
+          
+      
+      - name: pull
+        run: |
+          git pull origin main --rebase
+          git push origin main
+      
+      - name: push changes
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
+      
+      - name: Stop workflow
+        if: steps.check_runs.outputs.has_new_run == 'true'
+        run: exit 0
+
+      - name: keep
+        if: steps.check_runs.outputs.has_new_run == 'false'
+        run: sleep 60
